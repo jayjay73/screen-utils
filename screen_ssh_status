@@ -1,0 +1,4 @@
+#!/bin/bash
+
+test -S "$SSH_AUTH_SOCK" && echo -n " "
+

@@ -1,0 +1,25 @@
+#!/bin/bash
+
+new_sock="$1"
+old_sock="$SSH_AUTH_SOCK"
+
+sudo_targets=()
+sudo_targets=($(find /tmp/xudo-* -lname "${old_sock}" -exec sh -c 'cat $(dirname {})/sudo.user' \; | sort -u))
+
+echo "old sock: $old_sock" > /tmp/xudo.log
+echo "new sock: $new_sock" >> /tmp/xudo.log
+echo "sudo targets: ${sudo_targets[@]}" >> /tmp/xudo.log
+getfacl -cE ${old_sock} >> /tmp/xudo.log 2>&1
+
+# replace all links pointing to the old SSH auth agent socket with ones
+# pointing to the new socket.
+echo find /tmp/xudo-* -lname "${old_sock}" -exec ln -sfn ${new_sock} {} \; >> /tmp/xudo.log
+find /tmp/xudo-* -lname "${old_sock}" -exec echo ln -sfn ${new_sock} {} \; >> /tmp/xudo.log
+find /tmp/xudo-* -lname "${old_sock}" -exec ln -sfn ${new_sock} {} \; 
+
+for user in "${sudo_targets[@]}" ; do
+    echo setfacl -m u:${user}:rwx ${new_sock} >> /tmp/xudo.log
+    setfacl -m u:${user}:rwx ${new_sock}
+    echo setfacl -m u:${user}:rwx $( dirname ${new_sock} ) >> /tmp/xudo.log
+    setfacl -m u:${user}:rwx $( dirname ${new_sock} )
+done
