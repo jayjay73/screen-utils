@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 new_sock="$1"
 old_sock="$SSH_AUTH_SOCK"
