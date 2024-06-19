@@ -17,9 +17,19 @@ echo find /tmp/xudo-* -lname "${old_sock}" -exec ln -sfn ${new_sock} {} \; >> /t
 find /tmp/xudo-* -lname "${old_sock}" -exec echo ln -sfn ${new_sock} {} \; >> /tmp/xudo.log
 find /tmp/xudo-* -lname "${old_sock}" -exec ln -sfn ${new_sock} {} \; 
 
-for user in "${sudo_targets[@]}" ; do
-    echo setfacl -m u:${user}:rwx ${new_sock} >> /tmp/xudo.log
-    setfacl -m u:${user}:rwx ${new_sock}
-    echo setfacl -m u:${user}:rwx $( dirname ${new_sock} ) >> /tmp/xudo.log
-    setfacl -m u:${user}:rwx $( dirname ${new_sock} )
-done
+if [[ $(uname) == "FreeBSD" ]] ; then
+    for user in "${sudo_targets[@]}" ; do
+        setfacl -m u:${user}:rwxp::allow "${new_sock}"
+        setfacl -m u:${user}:rxp::allow "$( dirname ${new_sock} )"
+    done
+elif [[ $(uname) == "SunOS" ]] ; then
+    for user in "${sudo_targets[@]}" ; do
+        /usr/bin/chmod A+user:${user}:rwx:allow "${new_sock}"
+        /usr/bin/chmod A+user:${user}:rx:allow "$( dirname ${new_sock} )"
+    done
+else
+    for user in "${sudo_targets[@]}" ; do
+        setfacl -m u:${user}:rwx "${new_sock}"
+        setfacl -m u:${user}:rx "$( dirname ${new_sock} )"
+    done
+fi
